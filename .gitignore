@@ -1,0 +1,73 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+.idea/modules.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+*.iws
+*.iml
+*.ipr
+
+### Eclipse ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+# --- IntelliJ IDEA ---
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+# Comment out the line below if you want to share common run configurations
+# !.idea/runConfigurations/ 
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+*.lp7
+*.DocumentRevisions-V100
+*.fseventsd
+
+# --- Spring Boot & Logs ---
+*.log
+/logs/*
+temp/
+/data/
+.project
+.classpath
+.settings/
+.factorypath
+
+# --- Sensitive Data / Local Config ---
+.env
+.env.local
+application-local.properties
+application-local.yml
+

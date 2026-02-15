@@ -1,0 +1,21 @@
+server:
+  port: 8081
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/orders?replicaSet=rs0
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+    producer:
+      properties:
+        acks: all
+
+app:
+  topics:
+    orders: orders.v1
+    inventory: inventory.v1

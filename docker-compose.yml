@@ -1,0 +1,73 @@
+services:
+  mongo-orders:
+    image: mongo:7
+    container_name: mongo-orders
+    ports: ["27017:27017"]
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+  mongo-inventory:
+    image: mongo:7
+    container_name: mongo-inventory
+    ports: ["27018:27017"]
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+  mongo-express-orders:
+    image: mongo-express:latest
+    container_name: mongo-express-orders-ui
+    restart: always
+    ports:
+      - "8090:8081"
+    environment:
+      # Use the connection string for your replica set
+      - ME_CONFIG_MONGODB_URL=mongodb://mongo-orders:27017/?replicaSet=rs0
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=pass
+    depends_on:
+      - mongo-orders
+
+  mongo-express-inventory:
+    image: mongo-express:latest
+    container_name: mongo-express-inventory-ui
+    restart: always
+    ports:
+      - "8091:8081"
+    environment:
+      # Use the connection string for your replica set
+      - ME_CONFIG_MONGODB_URL=mongodb://mongo-inventory:27017/?replicaSet=rs0
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=pass
+    depends_on:
+      - mongo-inventory
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    ports:
+      - "9092:9092"
+      - "9644:9644"
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - "PLAINTEXT://0.0.0.0:9092"
+      - --advertise-kafka-addr
+      - "PLAINTEXT://localhost:9092"
+
+  console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    ports: ["8089:8080"]
+    environment:
+      KAFKA_BROKERS: "redpanda:9092"
+    depends_on: [redpanda]
+
