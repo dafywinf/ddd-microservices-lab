@@ -1,0 +1,81 @@
+# docker/kafka-tail.yml
+#
+# Streams every message written to orders.v1 and inventory.v1 to your terminal.
+# Requires the platform to be running (docker compose -f docker/platform.yml up -d).
+#
+# Each record is printed as a JSON object:
+#   { "topic": "...", "key": "...", "value": "...", "partition": 0, "offset": 0, ... }
+#
+# Usage:
+#
+#   # Tail both topics side-by-side (service name is prefixed on each line)
+#   docker compose -f docker/kafka-tail.yml up
+#
+#   # Tail a single topic
+#   docker compose -f docker/kafka-tail.yml run --rm tail-inventory
+#   docker compose -f docker/kafka-tail.yml run --rm tail-orders
+#
+#   # Produce a one-off test event (pipe JSON in from stdin)
+#   echo '<json>' | docker compose -f docker/kafka-tail.yml run --rm -T produce-orders
+#
+# All services use -o start (offset=beginning) so you see the full history of
+# the topic, not just messages that arrive after you start the container.
+
+networks:
+  lab-net:
+    external: true    # created by platform.yml
+
+services:
+
+  # ── Consumers ────────────────────────────────────────────────────────────────
+
+  tail-orders:
+    image: redpandadata/redpanda:latest
+    container_name: tail-orders
+    entrypoint:
+      - rpk
+      - topic
+      - consume
+      - orders.v1
+      - --brokers
+      - redpanda:29092
+      - -o
+      - start
+    networks: [lab-net]
+
+  tail-inventory:
+    image: redpandadata/redpanda:latest
+    container_name: tail-inventory
+    entrypoint:
+      - rpk
+      - topic
+      - consume
+      - inventory.v1
+      - --brokers
+      - redpanda:29092
+      - -o
+      - start
+    networks: [lab-net]
+
+  # ── Producer helper ───────────────────────────────────────────────────────────
+  #
+  # Pipe a JSON string into this service to publish it to orders.v1.
+  # The --key flag sets the Kafka message key (use your orderId).
+  #
+  # Example (from the runbook):
+  #   echo '<json>' | docker compose -f docker/kafka-tail.yml \
+  #     run --rm -T produce-orders
+  #
+  # rpk reads the message body from stdin, one message per line.
+  produce-orders:
+    image: redpandadata/redpanda:latest
+    container_name: produce-orders
+    entrypoint:
+      - rpk
+      - topic
+      - produce
+      - orders.v1
+      - --brokers
+      - redpanda:29092
+    stdin_open: true    # allows piping JSON via docker compose run -T
+    networks: [lab-net]

@@ -1,0 +1,136 @@
+# docker/platform.yml
+#
+# Starts the infrastructure that the inventory-service depends on:
+#   • MongoDB (single-node replica set) — required for @Transactional
+#   • Redpanda (Kafka-compatible broker)
+#   • Mongo Express web UI  →  http://localhost:8091  (admin / pass)
+#   • Redpanda Console      →  http://localhost:8089
+#
+# Two Kafka listeners are configured so the same broker works from both
+# the host machine and from Docker containers on lab-net:
+#   EXTERNAL (port 9092)  — used by 'mvn spring-boot:run' on the host
+#   INTERNAL (port 29092) — used by containers on lab-net (app.yml, kafka-tail.yml)
+#
+# Usage:
+#   docker compose -f docker/platform.yml up -d        # start (background)
+#   docker compose -f docker/platform.yml logs -f      # follow logs
+#   docker compose -f docker/platform.yml down -v      # stop and wipe volumes
+
+networks:
+  lab-net:
+    name: lab-net
+
+services:
+
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+
+  mongo-inventory:
+    image: mongo:7
+    container_name: mongo-inventory
+    ports:
+      - "27018:27017"    # host:27018  →  container:27017
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    networks: [lab-net]
+    healthcheck:
+      # 'ping' returns immediately once mongod is accepting connections
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  # Runs once after MongoDB is healthy, then exits.
+  # Calls rs.initiate() to promote the single node to a replica-set primary.
+  # The || true guard makes it idempotent — safe to re-run if the platform
+  # is brought down and back up without wiping volumes.
+  mongo-inventory-init:
+    image: mongo:7
+    container_name: mongo-inventory-init
+    depends_on:
+      mongo-inventory:
+        condition: service_healthy
+    command:
+      - mongosh
+      - "mongodb://mongo-inventory:27017"
+      - --eval
+      - >
+        try {
+          rs.initiate({_id:'rs0', members:[{_id:0, host:'mongo-inventory:27017'}]});
+          print('Replica set successfully initialized.');
+        } catch(e) {
+          print('Replica set already initialized or error: ' + e.message);
+        }
+    networks: [lab-net]
+    restart: "no"
+
+  # Browse the inventory database at http://localhost:8091  (admin / pass)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express-inventory
+    ports:
+      - "8091:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: "mongodb://mongo-inventory:27017/?replicaSet=rs0&directConnection=true"
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: pass
+    depends_on:
+      mongo-inventory:
+        condition: service_healthy
+    networks: [lab-net]
+    restart: on-failure
+
+  # ── Redpanda ─────────────────────────────────────────────────────────────────
+
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    ports:
+      - "9092:9092"    # EXTERNAL listener — Kafka API reachable from the host
+      - "9644:9644"    # Admin / health API
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      # Two listeners on two ports.
+      # EXTERNAL is advertised as localhost:9092 → reachable from the host.
+      # INTERNAL is advertised as redpanda:29092 → reachable from Docker containers.
+      - --kafka-addr=INTERNAL://0.0.0.0:29092,EXTERNAL://0.0.0.0:9092
+      - --advertise-kafka-addr=INTERNAL://redpanda:29092,EXTERNAL://localhost:9092
+    networks: [lab-net]
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:9644/v1/cluster/health_overview"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  # Runs once after Redpanda is healthy, then exits.
+  # Pre-creates both topics so consumers (OrdersListener, kafka-tail) can
+  # subscribe immediately without waiting for a producer to create them.
+  redpanda-init:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda-init
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c",
+      "rpk topic create orders.v1 inventory.v1 --brokers redpanda:29092 2>/dev/null; echo 'topics ready'"]
+    networks: [lab-net]
+    restart: "no"
+
+  # Browse topics and produce/consume messages at http://localhost:8089
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    ports:
+      - "8089:8080"
+    environment:
+      KAFKA_BROKERS: "redpanda:29092"    # internal listener
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    networks: [lab-net]

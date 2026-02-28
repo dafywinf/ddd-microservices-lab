@@ -1,0 +1,39 @@
+# docker/app.yml
+#
+# Runs the inventory-service as a Docker container.
+# The platform must already be running before starting this file:
+#
+#   docker compose -f docker/platform.yml up -d
+#
+# Build the fat jar (only needed when source changes):
+#
+#   mvn package -DskipTests           (from inventory-service/)
+#
+# Then start the app:
+#
+#   docker compose -f docker/app.yml up          # foreground — stream logs
+#   docker compose -f docker/app.yml up -d       # background
+#   docker compose -f docker/app.yml down        # stop
+#   docker compose -f docker/app.yml up --build  # rebuild image + start
+
+networks:
+  lab-net:
+    external: true    # created by platform.yml
+
+services:
+
+  inventory-service:
+    build:
+      context: ..                  # inventory-service/ directory (contains pom.xml)
+      dockerfile: docker/Dockerfile
+    container_name: inventory-service
+    ports:
+      - "8082:8082"
+    environment:
+      # Override application.yml so the app talks to containers on lab-net
+      # rather than localhost addresses.
+      SPRING_MONGODB_URI: >-
+        mongodb://mongo-inventory:27017/inventory_db?replicaSet=rs0&directConnection=true
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "redpanda:29092"    # INTERNAL listener
+    networks: [lab-net]
+    restart: on-failure

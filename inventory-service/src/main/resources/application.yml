@@ -2,10 +2,6 @@ server:
   port: 8082
 
 spring:
-  data:
-    mongodb:
-      uri: mongodb://localhost:27018/inventory?replicaSet=rs0
-
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -14,6 +10,8 @@ spring:
     producer:
       properties:
         acks: all
+  mongodb:
+    uri: mongodb://localhost:27018/inventory_db?replicaSet=rs0&directConnection=true
 
 app:
   topics:
