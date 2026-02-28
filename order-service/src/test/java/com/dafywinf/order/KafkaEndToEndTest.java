@@ -122,7 +122,7 @@ class KafkaEndToEndTest {
     void whenOrderIsPlaced_orderPlacedEventAppearsOnOrdersTopic() throws Exception {
         var orderId = createAndPlaceOrder("SKU-A", 2, "SKU-B", 1);
 
-        var record = waitForOrdersEvent(orderId);
+        ConsumerRecord<String, String> record = waitForOrdersEvent(orderId);
 
         assertThat(new String(record.headers().lastHeader("type").value())).isEqualTo("OrderPlaced");
         assertThat(record.value()).contains("\"orderId\":\"" + orderId + "\"");
@@ -191,7 +191,7 @@ class KafkaEndToEndTest {
 
     @Step("Publish inventory event to 'inventory.v1' for order {orderId}")
     private void publishInventoryEvent(String orderId, String payload, String type) throws Exception {
-        var record = new ProducerRecord<>("inventory.v1", null, orderId, payload);
+        ProducerRecord<String, String> record = new ProducerRecord<>("inventory.v1", null, orderId, payload);
         record.headers().add("type", type.getBytes(StandardCharsets.UTF_8));
         kafkaTemplate.send(record).get();
     }

@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -72,12 +73,12 @@ public class InventoryApplicationService {
     // Applies all reservations in-memory first, then persists in one batch.
     // If any item is unknown or has insufficient stock, throws before any write occurs.
     private void reserveAll(List<Events.OrderPlaced.LineItem> items) {
-        var skus = items.stream().map(Events.OrderPlaced.LineItem::sku).toList();
-        var stockMap = stock.findAllById(skus).stream()
+        List<String> skus = items.stream().map(Events.OrderPlaced.LineItem::sku).toList();
+        Map<String, StockItem> stockMap = stock.findAllById(skus).stream()
                 .collect(Collectors.toMap(StockItem::getSku, item -> item));
 
         for (var li : items) {
-            var item = stockMap.get(li.sku());
+            StockItem item = stockMap.get(li.sku());
             if (item == null) throw new IllegalArgumentException("unknown sku=" + li.sku());
             item.reserve(li.quantity());
         }

@@ -6,6 +6,7 @@ import com.dafywinf.inventory.domain.StockItem;
 import com.dafywinf.inventory.domain.StockItemRepository;
 import com.dafywinf.inventory.events.Events;
 import com.dafywinf.inventory.idempotency.ProcessedEventRepository;
+import com.dafywinf.inventory.outbox.OutboxMessage;
 import com.dafywinf.inventory.outbox.OutboxRepository;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
@@ -80,21 +81,21 @@ class HandleOrderPlacedTest {
                 new StockItem("SKU-B", 5)
         ));
 
-        var event = orderPlaced("evt-happy", "order-1",
+        Events.OrderPlaced event = orderPlaced("evt-happy", "order-1",
                 new Events.OrderPlaced.LineItem("SKU-A", 3),
                 new Events.OrderPlaced.LineItem("SKU-B", 2));
 
         service.handleOrderPlaced(event);
 
-        var skuA = stockRepo.findById("SKU-A").orElseThrow();
+        StockItem skuA = stockRepo.findById("SKU-A").orElseThrow();
         assertThat(skuA.getAvailable()).isEqualTo(7);
         assertThat(skuA.getReserved()).isEqualTo(3);
 
-        var skuB = stockRepo.findById("SKU-B").orElseThrow();
+        StockItem skuB = stockRepo.findById("SKU-B").orElseThrow();
         assertThat(skuB.getAvailable()).isEqualTo(3);
         assertThat(skuB.getReserved()).isEqualTo(2);
 
-        var messages = outboxRepo.findAll();
+        List<OutboxMessage> messages = outboxRepo.findAll();
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).getType()).isEqualTo("StockReserved");
         assertThat(messages.get(0).getStatus()).isEqualTo("PENDING");
@@ -112,21 +113,21 @@ class HandleOrderPlacedTest {
                 new StockItem("SKU-B", 1)
         ));
 
-        var event = orderPlaced("evt-short", "order-2",
+        Events.OrderPlaced event = orderPlaced("evt-short", "order-2",
                 new Events.OrderPlaced.LineItem("SKU-A", 3),
                 new Events.OrderPlaced.LineItem("SKU-B", 5));
 
         service.handleOrderPlaced(event);
 
-        var skuA = stockRepo.findById("SKU-A").orElseThrow();
+        StockItem skuA = stockRepo.findById("SKU-A").orElseThrow();
         assertThat(skuA.getAvailable()).isEqualTo(10);
         assertThat(skuA.getReserved()).isEqualTo(0);
 
-        var skuB = stockRepo.findById("SKU-B").orElseThrow();
+        StockItem skuB = stockRepo.findById("SKU-B").orElseThrow();
         assertThat(skuB.getAvailable()).isEqualTo(1);
         assertThat(skuB.getReserved()).isEqualTo(0);
 
-        var messages = outboxRepo.findAll();
+        List<OutboxMessage> messages = outboxRepo.findAll();
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).getType()).isEqualTo("StockReservationFailed");
         assertThat(messages.get(0).getStatus()).isEqualTo("PENDING");
@@ -140,12 +141,12 @@ class HandleOrderPlacedTest {
     void whenSkuDoesNotExist_stockReservationFailedOutboxMessageIsCreated() throws Exception {
         stockRepo.save(new StockItem("SKU-A", 10));
 
-        var event = orderPlaced("evt-unknown", "order-3",
+        Events.OrderPlaced event = orderPlaced("evt-unknown", "order-3",
                 new Events.OrderPlaced.LineItem("GHOST-SKU", 1));
 
         service.handleOrderPlaced(event);
 
-        var messages = outboxRepo.findAll();
+        List<OutboxMessage> messages = outboxRepo.findAll();
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).getType()).isEqualTo("StockReservationFailed");
         assertThat(stockRepo.findById("SKU-A").orElseThrow().getAvailable()).isEqualTo(10);
@@ -157,13 +158,13 @@ class HandleOrderPlacedTest {
     void whenSameEventArrivesMoreThanOnce_onlyTheFirstDeliveryIsProcessed() throws Exception {
         stockRepo.save(new StockItem("SKU-A", 10));
 
-        var event = orderPlaced("evt-dup", "order-4",
+        Events.OrderPlaced event = orderPlaced("evt-dup", "order-4",
                 new Events.OrderPlaced.LineItem("SKU-A", 3));
 
         service.handleOrderPlaced(event);
         service.handleOrderPlaced(event);
 
-        var skuA = stockRepo.findById("SKU-A").orElseThrow();
+        StockItem skuA = stockRepo.findById("SKU-A").orElseThrow();
         assertThat(skuA.getAvailable()).isEqualTo(7);
         assertThat(skuA.getReserved()).isEqualTo(3);
 

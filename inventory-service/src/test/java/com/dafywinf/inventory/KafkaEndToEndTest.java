@@ -128,7 +128,7 @@ class KafkaEndToEndTest {
 
         publishOrderEvent(orderId, event);
 
-        var record = waitForInventoryEvent(orderId);
+        ConsumerRecord<String, String> record = waitForInventoryEvent(orderId);
 
         assertThat(record.value()).contains("\"orderId\":\"" + orderId + "\"");
         assertThat(record.value()).doesNotContain("reason");
@@ -151,7 +151,7 @@ class KafkaEndToEndTest {
 
         publishOrderEvent(orderId, event);
 
-        var record = waitForInventoryEvent(orderId);
+        ConsumerRecord<String, String> record = waitForInventoryEvent(orderId);
 
         assertThat(record.value()).contains("\"orderId\":\"" + orderId + "\"");
         assertThat(new String(record.headers().lastHeader("type").value())).isEqualTo("StockReservationFailed");
@@ -167,7 +167,7 @@ class KafkaEndToEndTest {
 
     @Step("Publish OrderPlaced event to Kafka topic 'orders.v1'")
     private void publishOrderEvent(String orderId, Events.OrderPlaced event) throws Exception {
-        var record = new ProducerRecord<>("orders.v1", null, orderId, mapper.writeValueAsString(event));
+        ProducerRecord<String, String> record = new ProducerRecord<>("orders.v1", null, orderId, mapper.writeValueAsString(event));
         record.headers().add("type", "OrderPlaced".getBytes(StandardCharsets.UTF_8));
         kafkaTemplate.send(record).get();
     }
