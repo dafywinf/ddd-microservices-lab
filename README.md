@@ -1,194 +1,227 @@
 # DDD Microservices Lab
-Spring Boot + MongoDB + Redpanda (Kafka) + Event-Driven + Outbox
 
-A minimal learning project for Domain Driven Design in microservices using Spring Boot.
-Two services communicate via events from the start and each owns its own database.
+**Spring Boot 4 + MongoDB + Redpanda (Kafka) + Event‑Driven + Outbox**
 
-Services:
-- order-service manages Orders and publishes OrderPlaced
-- inventory-service manages stock and reacts to orders
-- Redpanda provides Kafka-compatible event streaming
-- MongoDB per service provides isolated persistence
-- Outbox pattern ensures reliable event publishing
+A minimal learning project for Domain Driven Design (DDD) in
+microservices using Spring Boot 4.\
+Two services communicate via events from the start and each owns its own
+database.
 
---------------------------------------------------
+------------------------------------------------------------------------
 
-ARCHITECTURE OVERVIEW
+## Services
 
-Bounded contexts:
-- Order
-- Inventory
+-   **order-service** manages Orders and publishes `OrderPlaced`
+-   **inventory-service** manages stock and reacts to orders
+-   **Redpanda** provides Kafka-compatible event streaming
+-   **MongoDB per service** provides isolated persistence
+-   **Outbox pattern** ensures reliable event publishing
+
+------------------------------------------------------------------------
+
+## Architecture Overview
+
+### Bounded Contexts
+
+-   Order
+-   Inventory
 
 Each context:
-- Owns its own MongoDB
-- Publishes integration events
-- Consumes only public events from other services
-- Does not share domain models
 
-Event flow:
-1. Client creates order
-2. Order is placed -> OrderPlaced event written to outbox
-3. Outbox publisher sends event to orders.v1
-4. Inventory consumes event, reserves stock
-5. Inventory publishes outcome:
-    - StockReserved
-    - or StockReservationFailed
-6. Order consumes outcome and updates status:
-    - CONFIRMED
-    - or REJECTED
+-   Owns its own MongoDB
+-   Publishes integration events
+-   Consumes only public events from other services
+-   Does not share domain models
 
---------------------------------------------------
+### Event Flow
 
-TECHNOLOGY STACK
+1.  Client creates order
+2.  Order is placed → `OrderPlaced` event written to outbox
+3.  Outbox publisher sends event to `orders.v1`
+4.  Inventory consumes event and reserves stock
+5.  Inventory publishes outcome:
+   -   `StockReserved`
+   -   `StockReservationFailed`
+6.  Order consumes outcome and updates status:
+   -   `CONFIRMED`
+   -   `REJECTED`
 
-- Java 21
-- Spring Boot 3
-- Spring Data MongoDB
-- Spring Kafka
-- MongoDB per service
-- Redpanda (Kafka compatible broker)
-- Docker Compose
+------------------------------------------------------------------------
 
---------------------------------------------------
+## Technology Stack
 
-PREREQUISITES
+-   Java 21
+-   Spring Boot 4
+-   Spring Data MongoDB
+-   Spring Kafka
+-   MongoDB per service
+-   Redpanda (Kafka compatible broker)
+-   Docker Compose
+-   Allure Test Reporting
+
+------------------------------------------------------------------------
+
+## Prerequisites
 
 Install:
 
-- Docker
-- Docker Compose
-- Java 21
-- Maven 3.9+
+-   Docker
+-   Docker Compose
+-   Java 21
+-   Maven 3.9+
 
 Verify:
 
+``` bash
 docker --version
 mvn -version
 java -version
-
---------------------------------------------------
-
-FIRST TIME STARTUP
-
-1) Start infrastructure
-
-```
-docker compose up -d
 ```
 
-2) Initialise Mongo replica sets
+------------------------------------------------------------------------
 
+## First Time Startup
 
-**Run once only:**
+### 1. Start infrastructure
+
+``` bash
+docker compose -f docker/platform.yml up -d
 ```
+
+### 2. Initialise Mongo replica sets (Required for @Transactional)
+
+Run once only:
+
+``` bash
 docker exec -it mongo-orders mongosh --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo-orders:27017"}]})'
 docker exec -it mongo-inventory mongosh --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo-inventory:27017"}]})'
 ```
 
-
-3) Start services
+### 3. Start services
 
 Terminal 1:
-```
+
+``` bash
 cd order-service
 mvn spring-boot:run
 ```
 
 Terminal 2:
-```
+
+``` bash
 cd inventory-service
 mvn spring-boot:run
 ```
 
-4) Seed inventory
+### 4. Seed inventory
 
-```
+``` bash
 curl -X POST http://localhost:8082/inventory/seed   -H "Content-Type: application/json"   -d '{"sku":"ABC-123","available":10}'
 ```
 
-5) Create and place an order
+### 5. Create and place an order
 
-```
+``` bash
 ORDER_ID=$(curl -s -X POST http://localhost:8081/orders | python3 -c 'import sys,json; print(json.load(sys.stdin)["id"])')
+
 curl -X POST http://localhost:8081/orders/$ORDER_ID/lines   -H "Content-Type: application/json"   -d '{"sku":"ABC-123","quantity":2}'
+
 curl -X POST http://localhost:8081/orders/$ORDER_ID/place
 ```
 
-Check result:
+------------------------------------------------------------------------
 
+## Testing & Reporting
+
+The project includes BDD-style testing with Allure reporting.
+
+Run tests:
+
+``` bash
+mvn clean test
 ```
-curl http://localhost:8081/orders/$ORDER_ID
+
+Generate and serve Allure report:
+
+``` bash
+mvn allure:serve
 ```
 
-Expected:
-- CONFIRMED if stock exists
-- REJECTED if insufficient stock
+### Tests verify
 
---------------------------------------------------
+-   **HandleOrderPlacedTest**: Logic isolation with `@EmbeddedKafka`
+-   **KafkaEndToEndTest**: Full pipeline using Testcontainers
 
-REDPANDA CONSOLE
+------------------------------------------------------------------------
+
+## Redpanda Console
 
 http://localhost:8089
 
 Use it to inspect topics and events.
 
---------------------------------------------------
+------------------------------------------------------------------------
 
-TOPICS
+## Topics
 
-orders.v1
-inventory.v1
+-   `orders.v1`
+-   `inventory.v1`
 
-Kafka key: orderId
+Kafka key: `orderId`
 
---------------------------------------------------
+------------------------------------------------------------------------
 
-DOMAIN MODEL SUMMARY
+## Domain Model Summary
 
-Order states:
-- DRAFT
-- PLACED
-- CONFIRMED
-- REJECTED
+### Order States
 
-Rules:
-- Cannot place empty order
-- Cannot confirm before placement
-- Cannot reject after confirmation
+-   DRAFT
+-   PLACED
+-   CONFIRMED
+-   REJECTED
 
-Inventory rules:
-- Cannot reserve more stock than available
+### Rules
 
---------------------------------------------------
+-   Cannot place empty order
+-   Cannot confirm before placement
+-   Cannot reject after confirmation
 
-OUTBOX PATTERN
+### Inventory Rules
+
+-   Cannot reserve more stock than available
+
+------------------------------------------------------------------------
+
+## Outbox Pattern
 
 Each service:
-1. Updates aggregate
-2. Writes integration event to outbox collection
-3. Background publisher sends events to Kafka
-4. Marks message SENT
+
+1.  Updates aggregate
+2.  Writes integration event to outbox collection
+3.  Background publisher sends events to Kafka
+4.  Marks message as SENT
 
 Prevents lost events and dual-write problems.
 
---------------------------------------------------
+------------------------------------------------------------------------
 
-IDEMPOTENCY
+## Idempotency
 
-Each consumer stores processed eventId.
+Each consumer stores processed `eventId`.
 
 Prevents:
-- duplicate reservations
-- duplicate confirmations
-- replay side effects
 
---------------------------------------------------
+-   duplicate reservations
+-   duplicate confirmations
+-   replay side effects
 
-RESET ENVIRONMENT
+------------------------------------------------------------------------
 
-```
-docker compose down -v
-docker compose up -d
+## Reset Environment
+
+``` bash
+docker compose -f docker/platform.yml down -v
+docker compose -f docker/platform.yml up -d
 ```
 
 Reinitialise replica sets.
@@ -200,45 +233,36 @@ docker exec -it mongo-inventory mongosh --eval 'rs.initiate({_id:"rs0",members:[
 
 --------------------------------------------------
 
-TROUBLESHOOTING
+## Troubleshooting
 
-Services cannot connect to Mongo:
-- Replica set not initialised
+### Services cannot connect to Mongo
 
-Events missing:
-- Check Redpanda running
-- Check outbox publisher logs
-- Check topic names
+-   Replica set not initialised
 
-Order stuck in PLACED:
-- Inventory may have failed
-- Check inventory logs and events
+### Events missing
 
---------------------------------------------------
+-   Check Redpanda is running
+-   Check outbox publisher logs
+-   Check topic names
 
-LEARNING PATH
+### Order stuck in PLACED
 
-1. Run system end-to-end
-2. Inspect Mongo collections
-3. Inspect Kafka topics
-4. Read Order aggregate rules
-5. Read Inventory aggregate rules
-6. Understand Outbox publisher
-7. Follow event lifecycle
+-   Inventory may have failed
+-   Check inventory logs and events
 
---------------------------------------------------
+------------------------------------------------------------------------
 
-PURPOSE
+## Purpose
 
 This project teaches:
 
-- Domain Driven Design in practice
-- Bounded contexts
-- Aggregates and invariants
-- Integration events
-- Event-driven microservices
-- Outbox reliability pattern
-- Idempotent consumers
-- Eventual consistency
+-   Domain Driven Design in practice
+-   Bounded contexts
+-   Aggregates and invariants
+-   Integration events
+-   Event-driven microservices
+-   Outbox reliability pattern
+-   Idempotent consumers
+-   Eventual consistency
 
-Intentionally minimal, not production hardened.
+**Intentionally minimal and not production hardened.**
