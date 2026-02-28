@@ -11,11 +11,15 @@ import io.qameta.allure.Feature;
 import io.qameta.allure.Step;
 import io.qameta.allure.Story;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -27,6 +31,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,6 +47,8 @@ import static org.awaitility.Awaitility.await;
 @Feature("Kafka Event Pipeline")
 @SpringBootTest
 class KafkaEndToEndTest {
+
+    private static final Logger log = LoggerFactory.getLogger(KafkaEndToEndTest.class);
 
     static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7.0")
             .withExposedPorts(27017)
@@ -82,12 +89,14 @@ class KafkaEndToEndTest {
     @Autowired ProcessedEventRepository      processedRepo;
 
     KafkaConsumer<String, String> inventoryConsumer;
+    List<ConsumerRecord<String, String>> received;
 
     @BeforeEach
     void setup() throws Exception {
         stockRepo.deleteAll();
         outboxRepo.deleteAll();
         processedRepo.deleteAll();
+        received = new ArrayList<>();
 
         inventoryConsumer = new KafkaConsumer<>(Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,         KAFKA.getBootstrapServers(),
@@ -119,10 +128,11 @@ class KafkaEndToEndTest {
 
         publishOrderEvent(orderId, event);
 
-        var message = waitForInventoryEvent(orderId);
+        var record = waitForInventoryEvent(orderId);
 
-        assertThat(message).doesNotContain("reason");
-        assertThat(message).contains("\"orderId\":\"" + orderId + "\"");
+        assertThat(record.value()).contains("\"orderId\":\"" + orderId + "\"");
+        assertThat(record.value()).doesNotContain("reason");
+        assertThat(new String(record.headers().lastHeader("type").value())).isEqualTo("StockReserved");
 
         await().atMost(5, SECONDS).until(() ->
                 outboxRepo.findAll().stream().allMatch(m -> "SENT".equals(m.getStatus())));
@@ -141,10 +151,10 @@ class KafkaEndToEndTest {
 
         publishOrderEvent(orderId, event);
 
-        var message = waitForInventoryEvent(orderId);
+        var record = waitForInventoryEvent(orderId);
 
-        assertThat(message).contains("reason");
-        assertThat(message).contains("\"orderId\":\"" + orderId + "\"");
+        assertThat(record.value()).contains("\"orderId\":\"" + orderId + "\"");
+        assertThat(new String(record.headers().lastHeader("type").value())).isEqualTo("StockReservationFailed");
         assertThat(stockRepo.findById("SKU-A").orElseThrow().getAvailable()).isEqualTo(1);
     }
 
@@ -157,17 +167,22 @@ class KafkaEndToEndTest {
 
     @Step("Publish OrderPlaced event to Kafka topic 'orders.v1'")
     private void publishOrderEvent(String orderId, Events.OrderPlaced event) throws Exception {
-        kafkaTemplate.send("orders.v1", orderId, mapper.writeValueAsString(event)).get();
+        var record = new ProducerRecord<>("orders.v1", null, orderId, mapper.writeValueAsString(event));
+        record.headers().add("type", "OrderPlaced".getBytes(StandardCharsets.UTF_8));
+        kafkaTemplate.send(record).get();
     }
 
     @Step("Wait for response event on 'inventory.v1' for order {orderId}")
-    private String waitForInventoryEvent(String orderId) {
-        var received = new ArrayList<String>();
+    private ConsumerRecord<String, String> waitForInventoryEvent(String orderId) {
         await().atMost(30, SECONDS).until(() -> {
-            inventoryConsumer.poll(Duration.ofMillis(500))
-                    .forEach(r -> received.add(r.value()));
-            return received.stream().anyMatch(m -> m.contains(orderId));
+            inventoryConsumer.poll(Duration.ofMillis(500)).forEach(r -> {
+                log.info("Received on inventory.v1: key={}, value={}", r.key(), r.value());
+                r.headers().forEach(h ->
+                    log.info("  Header: {}={}", h.key(), new String(h.value(), StandardCharsets.UTF_8)));
+                received.add(r);
+            });
+            return received.stream().anyMatch(r -> r.value().contains(orderId));
         });
-        return received.stream().filter(m -> m.contains(orderId)).findFirst().orElseThrow();
+        return received.stream().filter(r -> r.value().contains(orderId)).findFirst().orElseThrow();
     }
 }

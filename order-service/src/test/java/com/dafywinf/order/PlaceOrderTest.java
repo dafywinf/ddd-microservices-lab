@@ -12,6 +12,7 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import tools.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -106,7 +108,7 @@ class PlaceOrderTest {
 
         var eventId = UUID.randomUUID().toString();
         var evt = new Events.StockReserved(eventId, Instant.now(), orderId);
-        inventoryListener.onInventoryEvent(mapper.writeValueAsString(evt));
+        inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, mapper.writeValueAsString(evt)));
 
         var order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
@@ -124,7 +126,7 @@ class PlaceOrderTest {
 
         var eventId = UUID.randomUUID().toString();
         var evt = new Events.StockReservationFailed(eventId, Instant.now(), orderId, "Insufficient stock for SKU-A");
-        inventoryListener.onInventoryEvent(mapper.writeValueAsString(evt));
+        inventoryListener.onInventoryEvent(inventoryRecord("StockReservationFailed", orderId, mapper.writeValueAsString(evt)));
 
         var order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED);
@@ -143,11 +145,17 @@ class PlaceOrderTest {
         var evt = new Events.StockReserved(eventId, Instant.now(), orderId);
         String payload = mapper.writeValueAsString(evt);
 
-        inventoryListener.onInventoryEvent(payload);
-        inventoryListener.onInventoryEvent(payload);
+        inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, payload));
+        inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, payload));
 
         var order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         assertThat(processedRepo.count()).isEqualTo(1);
+    }
+
+    private ConsumerRecord<String, String> inventoryRecord(String type, String orderId, String payload) {
+        var record = new ConsumerRecord<>("inventory.v1", 0, 0L, orderId, payload);
+        record.headers().add("type", type.getBytes(StandardCharsets.UTF_8));
+        return record;
     }
 }
