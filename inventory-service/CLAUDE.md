@@ -119,6 +119,28 @@ The original project spec lives in the git history. The canonical source of trut
 
 ---
 
+## Git conventions
+
+### Commit messages
+Use **Conventional Commits** format: `<type>(<scope>): <description>`
+
+Common types: `feat`, `fix`, `chore`, `refactor`, `test`, `docs`, `ci`
+
+Examples from this project:
+- `feat(observability): add Prometheus metrics and Grafana monitoring stack`
+- `chore(build): reorder pom.xml to Maven best-practice conventions`
+
+### Branch naming
+Use `<type>/<short-description>` kebab-case, matching the conventional commit type:
+- `feature/prometheus-support`
+- `fix/partial-reservation`
+- `chore/pom-cleanup`
+
+### Squashing
+Squash incremental/WIP commits before merging. Each commit on `main` should represent one coherent unit of work with a single conventional commit message.
+
+---
+
 ## Session notes (last updated 2026-02-28)
 
 ### Jackson import
