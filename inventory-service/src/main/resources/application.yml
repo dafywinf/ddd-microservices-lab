@@ -2,6 +2,8 @@ server:
   port: 8082
 
 spring:
+  application:
+    name: inventory-service
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
@@ -17,3 +19,12 @@ app:
   topics:
     orders: orders.v1
     inventory: inventory.v1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: ${spring.application.name}
