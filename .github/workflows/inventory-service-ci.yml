@@ -1,0 +1,35 @@
+name: Inventory Service CI
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'inventory-service/**'       # <--- ONLY trigger on changes here
+      - '.github/workflows/inventory-service-ci.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - 'inventory-service/**'
+      - '.github/workflows/inventory-service-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Set the default working directory for all 'run' commands in this job
+    defaults:
+      run:
+        working-directory: ./inventory-service
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build and Test Inventory Service
+      run: mvn clean verify --batch-mode -ntp
