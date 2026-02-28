@@ -12,9 +12,15 @@ on:
       - 'inventory-service/**'
       - '.github/workflows/inventory-service-ci.yml'
 
+# concurrency:
+#   group: "gh-pages-deploy"
+#   cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to push to gh-pages branch
     # Set the default working directory for all 'run' commands in this job
     defaults:
       run:
@@ -33,3 +39,29 @@ jobs:
 
     - name: Build and Test Inventory Service
       run: mvn clean verify --batch-mode -ntp
+
+    # - name: Fetch Allure history
+    #   uses: actions/checkout@v4
+    #   if: always()
+    #   continue-on-error: true
+    #   with:
+    #     ref: gh-pages
+    #     path: gh-pages
+    #
+    # - name: Generate Allure Report
+    #   uses: simple-elf/allure-report-action@master
+    #   if: always()
+    #   with:
+    #     allure_results: inventory-service/target/allure-results
+    #     allure_history: allure-history
+    #     keep_reports: 20
+    #
+    # - name: Deploy to GitHub Pages
+    #   uses: peaceiris/actions-gh-pages@v4
+    #   if: always()
+    #   with:
+    #     github_token: ${{ secrets.GITHUB_TOKEN }}
+    #     publish_branch: gh-pages
+    #     publish_dir: allure-history
+    #     keep_files: true                     # <--- Prevents deleting the inventory report
+    #     destination_dir: inventory-service       # <--- Puts the report in its own folder
