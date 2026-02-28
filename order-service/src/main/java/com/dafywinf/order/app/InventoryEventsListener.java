@@ -4,6 +4,7 @@ import com.dafywinf.order.events.Events;
 import com.dafywinf.order.idempotency.ProcessedEvent;
 import com.dafywinf.order.idempotency.ProcessedEventRepository;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.header.Header;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tools.jackson.databind.ObjectMapper;
@@ -29,8 +30,8 @@ public class InventoryEventsListener {
 
     @KafkaListener(topics = "${app.topics.inventory}", groupId = "order-service")
     public void onInventoryEvent(ConsumerRecord<String, String> record) throws Exception {
-        var typeHeader = record.headers().lastHeader("type");
-        var type = typeHeader != null ? new String(typeHeader.value(), StandardCharsets.UTF_8) : "";
+        Header typeHeader = record.headers().lastHeader("type");
+        String type = typeHeader != null ? new String(typeHeader.value(), StandardCharsets.UTF_8) : "";
         var payload = record.value();
 
         log.info("Received inventory event: type={}, key={}, payload={}", type, record.key(), payload);

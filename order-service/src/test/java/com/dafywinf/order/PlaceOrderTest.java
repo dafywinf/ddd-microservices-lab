@@ -3,10 +3,12 @@ package com.dafywinf.order;
 import com.dafywinf.order.app.InventoryEventsListener;
 import com.dafywinf.order.app.OrderApplicationService;
 import com.dafywinf.order.app.OutboxPublisher;
+import com.dafywinf.order.domain.Order;
 import com.dafywinf.order.domain.OrderRepository;
 import com.dafywinf.order.domain.OrderStatus;
 import com.dafywinf.order.events.Events;
 import com.dafywinf.order.idempotency.ProcessedEventRepository;
+import com.dafywinf.order.outbox.OutboxMessage;
 import com.dafywinf.order.outbox.OutboxRepository;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;
@@ -26,6 +28,7 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -87,10 +90,10 @@ class PlaceOrderTest {
 
         service.placeOrder(orderId);
 
-        var order = orderRepo.findById(orderId).orElseThrow();
+        Order order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PLACED);
 
-        var messages = outboxRepo.findAll();
+        List<OutboxMessage> messages = outboxRepo.findAll();
         assertThat(messages).hasSize(1);
         assertThat(messages.get(0).getType()).isEqualTo("OrderPlaced");
         assertThat(messages.get(0).getStatus()).isEqualTo("PENDING");
@@ -110,7 +113,7 @@ class PlaceOrderTest {
         var evt = new Events.StockReserved(eventId, Instant.now(), orderId);
         inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, mapper.writeValueAsString(evt)));
 
-        var order = orderRepo.findById(orderId).orElseThrow();
+        Order order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         assertThat(processedRepo.existsById(eventId)).isTrue();
     }
@@ -128,7 +131,7 @@ class PlaceOrderTest {
         var evt = new Events.StockReservationFailed(eventId, Instant.now(), orderId, "Insufficient stock for SKU-A");
         inventoryListener.onInventoryEvent(inventoryRecord("StockReservationFailed", orderId, mapper.writeValueAsString(evt)));
 
-        var order = orderRepo.findById(orderId).orElseThrow();
+        Order order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.REJECTED);
         assertThat(processedRepo.existsById(eventId)).isTrue();
     }
@@ -148,13 +151,13 @@ class PlaceOrderTest {
         inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, payload));
         inventoryListener.onInventoryEvent(inventoryRecord("StockReserved", orderId, payload));
 
-        var order = orderRepo.findById(orderId).orElseThrow();
+        Order order = orderRepo.findById(orderId).orElseThrow();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         assertThat(processedRepo.count()).isEqualTo(1);
     }
 
     private ConsumerRecord<String, String> inventoryRecord(String type, String orderId, String payload) {
-        var record = new ConsumerRecord<>("inventory.v1", 0, 0L, orderId, payload);
+        ConsumerRecord<String, String> record = new ConsumerRecord<>("inventory.v1", 0, 0L, orderId, payload);
         record.headers().add("type", type.getBytes(StandardCharsets.UTF_8));
         return record;
     }
