@@ -85,7 +85,7 @@ java -version
 ### 1. Start infrastructure
 
 ``` bash
-docker compose -f docker/platform.yml up -d
+docker compose -f platform/platform.yml up -d
 ```
 
 ### 2. Initialise Mongo replica sets (Required for @Transactional)
@@ -220,8 +220,8 @@ Prevents:
 ## Reset Environment
 
 ``` bash
-docker compose -f docker/platform.yml down -v
-docker compose -f docker/platform.yml up -d
+docker compose -f platform/platform.yml down -v
+docker compose -f platform/platform.yml up -d
 ```
 
 Reinitialise replica sets.
