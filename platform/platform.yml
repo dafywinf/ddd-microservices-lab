@@ -1,4 +1,4 @@
-# docker/platform.yml
+# platform/platform.yml
 #
 # Starts the infrastructure that the inventory-service depends on:
 #   • MongoDB (single-node replica set) — required for @Transactional
@@ -12,9 +12,9 @@
 #   INTERNAL (port 29092) — used by containers on lab-net (app.yml, kafka-tail.yml)
 #
 # Usage:
-#   docker compose -f docker/platform.yml up -d        # start (background)
-#   docker compose -f docker/platform.yml logs -f      # follow logs
-#   docker compose -f docker/platform.yml down -v      # stop and wipe volumes
+#   docker compose -f platform/platform.yml up -d        # start (background)
+#   docker compose -f platform/platform.yml logs -f      # follow logs
+#   docker compose -f platform/platform.yml down -v      # stop and wipe volumes
 
 networks:
   lab-net:

@@ -8,7 +8,7 @@ This repo contains two independent Spring Boot services under the git root (`ddd
 
 ```
 ddd-microservices-lab/
-  docker-compose.yml      # infra: mongo-orders, mongo-inventory, redpanda, consoles
+  platform/               # shared infra: MongoDB, Redpanda, monitoring
   README.md
   order-service/          # Spring Boot app, port 8081
   inventory-service/      # Spring Boot app, port 8082  <-- you are here
@@ -37,11 +37,11 @@ mvn package -DskipTests      # build jar
 Infrastructure (run from repo root):
 
 ```bash
-docker compose up -d         # start all infra
-docker compose down -v       # stop and wipe volumes (reset)
+docker compose -f platform/platform.yml up -d        # start all infra
+docker compose -f platform/platform.yml down -v      # stop and wipe volumes (reset)
 ```
 
-Mongo replica set init (run once after first `docker compose up -d`):
+Mongo replica set init (run once after first `docker compose -f platform/platform.yml up -d`):
 
 ```bash
 docker exec -it mongo-orders    mongosh --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"mongo-orders:27017"}]})'
