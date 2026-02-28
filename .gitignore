@@ -71,3 +71,10 @@ temp/
 application-local.properties
 application-local.yml
 
+# Allure Reporting
+**/allure-results/
+**/allure-report/
+**/allure-maven/
+
+# Allure CLI binaries
+**/.allure/
