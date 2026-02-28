@@ -1,0 +1,35 @@
+name: Order Service CI
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'order-service/**'       # <--- ONLY trigger on changes here
+      - '.github/workflows/order-service-ci.yml'
+  pull_request:
+    branches: [ "main", "master" ]
+    paths:
+      - 'order-service/**'
+      - '.github/workflows/order-service-ci.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Set the default working directory for all 'run' commands in this job
+    defaults:
+      run:
+        working-directory: ./order-service
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Build and Test Order Service
+      run: mvn clean verify --batch-mode -ntp
