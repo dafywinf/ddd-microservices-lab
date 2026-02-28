@@ -1,9 +1,12 @@
 package com.dafywinf.inventory.app;
 
 import com.dafywinf.inventory.outbox.OutboxRepository;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class OutboxPublisher {
@@ -22,7 +25,9 @@ public class OutboxPublisher {
 
     for (var msg : pending) {
       try {
-        kafka.send(msg.getTopic(), msg.getAggregateId(), msg.getPayloadJson()).get();
+        var record = new ProducerRecord<>(msg.getTopic(), null, msg.getAggregateId(), msg.getPayloadJson());
+        record.headers().add("type", msg.getType().getBytes(StandardCharsets.UTF_8));
+        kafka.send(record).get();
         msg.markSent();
         outbox.save(msg);
       } catch (Exception e) {
