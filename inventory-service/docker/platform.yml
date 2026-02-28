@@ -78,6 +78,20 @@ services:
     networks: [lab-net]
     restart: on-failure
 
+  # MongoDB Exporter sidecar to convert internal metrics to format Prometheus understands
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40
+    container_name: mongodb-exporter
+    environment:
+      # Connects to your inventory mongo instance
+      - MONGODB_URI=mongodb://mongo-inventory:27017/?replicaSet=rs0&directConnection=true
+    ports:
+      - "9216:9216"
+    networks: [lab-net]
+    depends_on:
+      mongo-inventory:
+        condition: service_healthy
+
   # ── Redpanda ─────────────────────────────────────────────────────────────────
 
   redpanda:
@@ -134,3 +148,32 @@ services:
       redpanda:
         condition: service_healthy
     networks: [lab-net]
+
+  # ── Monitoring ──────────────────────────────────────────────────────────────
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Required for Linux; works on Mac too
+    networks: [lab-net]
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      # Mount provisioning configs
+      - ./monitor/grafana/provisioning:/etc/grafana/provisioning
+      # Mount actual JSON dashboard files
+      - ./monitor/grafana/dashboards:/var/lib/grafana/dashboards
+    networks: [lab-net]
+    depends_on:
+      - prometheus

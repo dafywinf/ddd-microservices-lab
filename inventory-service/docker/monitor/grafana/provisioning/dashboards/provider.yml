@@ -1,0 +1,20 @@
+apiVersion: 1
+providers:
+  - name: 'Community Dashboards'
+    orgId: 1
+    folder: 'Platform'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards
+    # This section maps the internal JSON variables to your actual DS
+    inputs:
+      - name: DS_PROMETHEUS
+        type: datasource
+        pluginId: prometheus
+        value: prometheus # This refers to the UID we set in ds.yml
+    # This maps the JSON variable to your provisioned UID
+    jsonData:
+      DS_PROMETHEUS: prometheus
+      DS_LOKI: loki
