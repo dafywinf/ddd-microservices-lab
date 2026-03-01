@@ -1,0 +1,50 @@
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9.6-eclipse-temurin-21'
+            args '-v $HOME/.m2:/var/maven/.m2 -e MAVEN_CONFIG=/var/maven/.m2'
+        }
+    }
+
+    options {
+        timestamps()
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build and Test') {
+            steps {
+                dir('order-service') {
+                    sh 'mvn clean verify --batch-mode -ntp -Duser.home=/var/maven'
+                }
+            }
+            post {
+                always {
+                    junit testResults: 'order-service/target/surefire-reports/**/*.xml', allowEmptyResults: true
+                }
+            }
+        }
+
+        stage('Allure Report') {
+            steps {
+                // Placeholder: install the Allure plugin and uncomment below
+                echo 'Allure reporting stage — configure after installing the Allure Jenkins plugin'
+                // allure includeProperties: false,
+                //        jdk: '',
+                //        results: [[path: 'order-service/target/allure-results']]
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
