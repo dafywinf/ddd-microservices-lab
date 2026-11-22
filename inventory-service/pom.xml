@@ -18,7 +18,7 @@
     <maven.compiler.release>21</maven.compiler.release>
 
     <!-- library versions (alphabetical) -->
-    <allure.version>2.35.6</allure.version>
+    <allure.version>3.1.1</allure.version>
     <aspectj.version>1.9.27</aspectj.version>
     <testcontainers.version>2.0.5</testcontainers.version>
   </properties>
@@ -73,7 +73,7 @@
     <!-- test -->
     <dependency>
       <groupId>io.qameta.allure</groupId>
-      <artifactId>allure-junit5</artifactId>
+      <artifactId>allure-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -151,9 +151,6 @@
         <groupId>io.qameta.allure</groupId>
         <artifactId>allure-maven</artifactId>
         <version>3.1.0</version>
-        <configuration>
-          <reportVersion>${allure.version}</reportVersion>
-        </configuration>
       </plugin>
 
     </plugins>
