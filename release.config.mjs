@@ -14,8 +14,12 @@ export default {
   plugins: [
     ["./release/service-commits.mjs", conventional],
     // No comments or labels on every PR in the release: the first release would otherwise comment on all of them
-    ["@semantic-release/github", { successComment: false, releasedLabels: false }],
-    // Hands the version to later CI steps (the image build)
-    ["@semantic-release/exec", { successCmd: 'echo "version=${nextRelease.version}" >> "${GITHUB_OUTPUT:-/dev/null}"' }],
+    ["@semantic-release/github", { successCommentCondition: false, releasedLabels: false }],
+    // Hands the version to later CI steps (the image build). The command is a Lodash template, where ${...} means a
+    // template variable, so the shell variable is written $GITHUB_OUTPUT (unset when run locally)
+    [
+      "@semantic-release/exec",
+      { successCmd: 'if [ -n "$GITHUB_OUTPUT" ]; then echo "version=${nextRelease.version}" >> "$GITHUB_OUTPUT"; fi' },
+    ],
   ],
 };
