@@ -20,7 +20,7 @@
     <!-- library versions (alphabetical) -->
     <allure.version>2.35.6</allure.version>
     <aspectj.version>1.9.27</aspectj.version>
-    <testcontainers.version>1.21.4</testcontainers.version>
+    <testcontainers.version>2.0.5</testcontainers.version>
   </properties>
 
   <dependencyManagement>
