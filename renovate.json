@@ -4,6 +4,19 @@
   "timezone": "Europe/London",
   "labels": ["dependencies"],
   "prHourlyLimit": 0,
+  "packageRules": [
+    {
+      "description": "Major updates wait in the Dependency Dashboard until approved there",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Java: the JDK in CI and the runtime image move together, and only to LTS releases (every 2 years: 25, 29, 33...). The poms' java.version and the Jenkinsfile image suffix are changed by hand",
+      "matchDepNames": ["java-jdk", "eclipse-temurin"],
+      "groupName": "Java",
+      "allowedVersions": "/^(25|29|33|37)(\\D|$)/"
+    }
+  ],
   "docker-compose": {
     "managerFilePatterns": [
       "/(^|/)platform/[^/]+\\.ya?ml$/",
