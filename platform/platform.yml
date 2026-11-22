@@ -80,7 +80,7 @@ services:
 
   # MongoDB Exporter sidecar to convert internal metrics to format Prometheus understands
   mongodb-exporter:
-    image: percona/mongodb_exporter:0.40
+    image: percona/mongodb_exporter:0.54
     container_name: mongodb-exporter
     environment:
       # Connects to your inventory mongo instance
