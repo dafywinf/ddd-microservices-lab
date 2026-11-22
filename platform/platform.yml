@@ -25,7 +25,7 @@ services:
   # ── MongoDB ──────────────────────────────────────────────────────────────────
 
   mongo-inventory:
-    image: mongo:9
+    image: mongo:9.0.8
     container_name: mongo-inventory
     ports:
       - "27018:27017"    # host:27018  →  container:27017
@@ -43,7 +43,7 @@ services:
   # The || true guard makes it idempotent — safe to re-run if the platform
   # is brought down and back up without wiping volumes.
   mongo-inventory-init:
-    image: mongo:9
+    image: mongo:9.0.8
     container_name: mongo-inventory-init
     depends_on:
       mongo-inventory:
@@ -64,7 +64,7 @@ services:
 
   # Browse the inventory database at http://localhost:8091  (admin / pass)
   mongo-express:
-    image: mongo-express:latest
+    image: mongo-express:1.0.2
     container_name: mongo-express-inventory
     ports:
       - "8091:8081"
@@ -95,7 +95,7 @@ services:
   # ── Redpanda ─────────────────────────────────────────────────────────────────
 
   redpanda:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.3.1
     container_name: redpanda
     ports:
       - "9092:9092"    # EXTERNAL listener — Kafka API reachable from the host
@@ -126,7 +126,7 @@ services:
   # Pre-creates both topics so consumers (OrdersListener, kafka-tail) can
   # subscribe immediately without waiting for a producer to create them.
   redpanda-init:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.3.1
     container_name: redpanda-init
     depends_on:
       redpanda:
@@ -138,7 +138,7 @@ services:
 
   # Browse topics and produce/consume messages at http://localhost:8089
   redpanda-console:
-    image: redpandadata/console:latest
+    image: redpandadata/console:v3.15.0
     container_name: redpanda-console
     ports:
       - "8089:8080"
@@ -152,7 +152,7 @@ services:
   # ── Monitoring ──────────────────────────────────────────────────────────────
 
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v3.16.0
     container_name: prometheus
     ports:
       - "9090:9090"
@@ -163,7 +163,7 @@ services:
     networks: [lab-net]
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:13.3.1
     container_name: grafana
     ports:
       - "3000:3000"

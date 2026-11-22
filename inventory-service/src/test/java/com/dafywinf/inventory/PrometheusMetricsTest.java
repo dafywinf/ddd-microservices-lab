@@ -12,9 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.kafka.ConfluentKafkaContainer;
+import org.testcontainers.redpanda.RedpandaContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -36,13 +35,12 @@ class PrometheusMetricsTest {
     @LocalServerPort
     int port;
 
-    static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7.0")
+    static final GenericContainer<?> MONGO = new GenericContainer<>(TestImages.MONGO)
             .withExposedPorts(27017)
             .withCommand("mongod --replSet rs0 --bind_ip_all")
             .waitingFor(Wait.forLogMessage(".*Waiting for connections.*\\n", 1));
 
-    static final ConfluentKafkaContainer KAFKA = new ConfluentKafkaContainer(
-            DockerImageName.parse("confluentinc/cp-kafka:7.7.0"));
+    static final RedpandaContainer KAFKA = new RedpandaContainer(TestImages.REDPANDA);
 
     static {
         var mongoThread = new Thread(MONGO::start, "start-mongo");

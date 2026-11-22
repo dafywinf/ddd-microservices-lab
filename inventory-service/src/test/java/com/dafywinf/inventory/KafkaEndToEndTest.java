@@ -26,9 +26,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.kafka.ConfluentKafkaContainer;
+import org.testcontainers.redpanda.RedpandaContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
@@ -50,13 +49,12 @@ class KafkaEndToEndTest {
 
     private static final Logger log = LoggerFactory.getLogger(KafkaEndToEndTest.class);
 
-    static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7.0")
+    static final GenericContainer<?> MONGO = new GenericContainer<>(TestImages.MONGO)
             .withExposedPorts(27017)
             .withCommand("mongod --replSet rs0 --bind_ip_all")
             .waitingFor(Wait.forLogMessage(".*Waiting for connections.*\\n", 1));
 
-    static final ConfluentKafkaContainer KAFKA = new ConfluentKafkaContainer(
-            DockerImageName.parse("confluentinc/cp-kafka:7.7.0"));
+    static final RedpandaContainer KAFKA = new RedpandaContainer(TestImages.REDPANDA);
 
     static {
         var mongoThread = new Thread(MONGO::start, "start-mongo");
@@ -106,7 +104,17 @@ class KafkaEndToEndTest {
                 ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,  StringDeserializer.class
         ));
         inventoryConsumer.subscribe(List.of("inventory.v1"));
-        inventoryConsumer.poll(Duration.ofSeconds(1));
+        awaitAssignment(inventoryConsumer);
+    }
+
+    // With auto.offset.reset=latest, events sent before the partitions are assigned are never seen. Redpanda holds
+    // a new group's first join for 3 s (group_initial_rebalance_delay), so wait for the assignment, not a fixed time
+    static void awaitAssignment(KafkaConsumer<String, String> consumer) {
+        await().atMost(30, SECONDS).until(() -> {
+            consumer.poll(Duration.ofMillis(100));
+            return !consumer.assignment().isEmpty();
+        });
+        consumer.assignment().forEach(consumer::position);
     }
 
     @AfterEach
