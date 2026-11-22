@@ -17,6 +17,13 @@
       "managerFilePatterns": ["/(^|/)Jenkinsfile$/"],
       "matchStrings": ["image\\s+['\"](?<depName>[^:'\"]+):(?<currentValue>[^'\"]+)['\"]"],
       "datasourceTemplate": "docker"
+    },
+    {
+      "description": "Testcontainers images in TestImages.java, e.g. DockerImageName.parse(\"mongo:9.0.8\")",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)src/test/java/.+/TestImages\\.java$/"],
+      "matchStrings": ["DockerImageName\\.parse\\(\"(?<depName>[^:\"]+):(?<currentValue>[^\"]+)\"\\)"],
+      "datasourceTemplate": "docker"
     }
   ]
 }

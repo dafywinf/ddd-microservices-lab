@@ -30,7 +30,7 @@ services:
   # ── Consumers ────────────────────────────────────────────────────────────────
 
   tail-orders:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.3.1
     container_name: tail-orders
     entrypoint:
       - rpk
@@ -44,7 +44,7 @@ services:
     networks: [lab-net]
 
   tail-inventory:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.3.1
     container_name: tail-inventory
     entrypoint:
       - rpk
@@ -68,7 +68,7 @@ services:
   #
   # rpk reads the message body from stdin, one message per line.
   produce-orders:
-    image: redpandadata/redpanda:latest
+    image: redpandadata/redpanda:v26.3.1
     container_name: produce-orders
     entrypoint:
       - rpk

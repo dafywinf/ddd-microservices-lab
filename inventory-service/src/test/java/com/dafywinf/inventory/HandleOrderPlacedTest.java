@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EmbeddedKafka(partitions = 1, topics = {"orders.v1", "inventory.v1"})
 class HandleOrderPlacedTest {
 
-    static final GenericContainer<?> MONGO = new GenericContainer<>("mongo:7.0")
+    static final GenericContainer<?> MONGO = new GenericContainer<>(TestImages.MONGO)
             .withExposedPorts(27017)
             .withCommand("mongod --replSet rs0 --bind_ip_all")
             .waitingFor(Wait.forLogMessage(".*Waiting for connections.*\\n", 1));
