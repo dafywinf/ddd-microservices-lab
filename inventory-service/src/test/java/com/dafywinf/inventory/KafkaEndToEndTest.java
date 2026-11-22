@@ -26,7 +26,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.KafkaContainer;
+import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
@@ -55,7 +55,7 @@ class KafkaEndToEndTest {
             .withCommand("mongod --replSet rs0 --bind_ip_all")
             .waitingFor(Wait.forLogMessage(".*Waiting for connections.*\\n", 1));
 
-    static final KafkaContainer KAFKA = new KafkaContainer(
+    static final ConfluentKafkaContainer KAFKA = new ConfluentKafkaContainer(
             DockerImageName.parse("confluentinc/cp-kafka:7.7.0"));
 
     static {
