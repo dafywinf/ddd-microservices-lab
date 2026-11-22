@@ -17,6 +17,12 @@ on:
       - 'release.config.mjs'
       - 'release/**'
       - 'package*.json'
+  # Rebuild the image of an existing release (e.g. if it was deleted from GHCR); tests run on main first
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Existing release to rebuild, e.g. 1.1.0 (tag inventory-service-v1.1.0)'
+        required: true
 
 # concurrency:
 #   group: "gh-pages-deploy"
@@ -99,3 +105,55 @@ jobs:
         env:
           SERVICE: inventory-service
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # After a release (or a manual rebuild): build the jar at the release tag with that version, then push the image
+  # to GHCR as :<version> (what the deploy repo and Renovate follow) and :sha-<commit> (look-up by commit)
+  image:
+    needs: [build, release]
+    if: >-
+      !cancelled() && needs.build.result == 'success' &&
+      (needs.release.outputs.version != '' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push to ghcr.io/${{ github.repository_owner }}
+    env:
+      VERSION: ${{ needs.release.outputs.version || inputs.version }}
+      IMAGE: ghcr.io/${{ github.repository_owner }}/inventory-service
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: inventory-service-v${{ env.VERSION }}
+      - id: commit
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+      # Tests already passed for this commit in the build job
+      - name: Package $VERSION
+        working-directory: ./inventory-service
+        run: mvn package --batch-mode -ntp -DskipTests -Drevision="$VERSION"
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v7
+        with:
+          context: ./inventory-service
+          file: ./inventory-service/docker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ env.VERSION }}
+            ${{ env.IMAGE }}:sha-${{ steps.commit.outputs.short }}
+          # source links the package to this repo in GHCR; revision is the exact commit the image was built from
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.title=inventory-service
