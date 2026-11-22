@@ -25,7 +25,7 @@ services:
   # ── MongoDB ──────────────────────────────────────────────────────────────────
 
   mongo-inventory:
-    image: mongo:7
+    image: mongo:9
     container_name: mongo-inventory
     ports:
       - "27018:27017"    # host:27018  →  container:27017
@@ -43,7 +43,7 @@ services:
   # The || true guard makes it idempotent — safe to re-run if the platform
   # is brought down and back up without wiping volumes.
   mongo-inventory-init:
-    image: mongo:7
+    image: mongo:9
     container_name: mongo-inventory-init
     depends_on:
       mongo-inventory:
