@@ -73,7 +73,7 @@
     <!-- test -->
     <dependency>
       <groupId>io.qameta.allure</groupId>
-      <artifactId>allure-junit5</artifactId>
+      <artifactId>allure-jupiter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -151,9 +151,6 @@
         <groupId>io.qameta.allure</groupId>
         <artifactId>allure-maven</artifactId>
         <version>3.1.0</version>
-        <configuration>
-          <reportVersion>${allure.version}</reportVersion>
-        </configuration>
       </plugin>
 
     </plugins>
