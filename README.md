@@ -50,7 +50,7 @@ Each context:
 
 ## Technology Stack
 
--   Java 21
+-   Java 25
 -   Spring Boot 4
 -   Spring Data MongoDB
 -   Spring Kafka
@@ -67,7 +67,7 @@ Install:
 
 -   Docker
 -   Docker Compose
--   Java 21
+-   Java 25
 -   Maven 3.9+
 
 Verify:

@@ -14,8 +14,8 @@
 
   <properties>
     <!-- build -->
-    <java.version>21</java.version>
-    <maven.compiler.release>21</maven.compiler.release>
+    <java.version>25</java.version>
+    <maven.compiler.release>25</maven.compiler.release>
 
     <!-- library versions (alphabetical) -->
     <allure.version>3.1.1</allure.version>
@@ -123,6 +123,21 @@
               <artifactId>lombok</artifactId>
             </exclude>
           </excludes>
+        </configuration>
+      </plugin>
+
+      <!-- Since JDK 23 javac only runs annotation processors that are declared, so Lombok must be listed here -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
 

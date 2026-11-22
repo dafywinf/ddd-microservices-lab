@@ -18,7 +18,7 @@ Each service is a self-contained Maven project with its own `pom.xml`. There is 
 
 ## Tech stack
 
-- Java 21, Spring Boot 4.0.2, Maven
+- Java 25, Spring Boot 4.2, Maven
 - Persistence: Spring Data MongoDB (per-service database)
 - Messaging: Spring Kafka against Redpanda (Kafka-compatible)
 - Lombok used in inventory-service (`@Getter`, etc.)

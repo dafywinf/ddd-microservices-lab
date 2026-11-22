@@ -13,8 +13,8 @@
   </parent>
 
   <properties>
-    <java.version>21</java.version>
-    <maven.compiler.release>21</maven.compiler.release>
+    <java.version>25</java.version>
+    <maven.compiler.release>25</maven.compiler.release>
 
     <testcontainers.version>2.0.5</testcontainers.version>
     <allure.version>3.1.1</allure.version>

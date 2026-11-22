@@ -8,7 +8,7 @@
 # Then build the image (usually done automatically by app.yml):
 #   docker build -f docker/Dockerfile -t inventory-service .
 
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 

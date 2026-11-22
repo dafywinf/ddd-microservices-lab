@@ -9,7 +9,7 @@ This runbook walks you through starting the inventory service, seeding stock, pu
 | Tool | Why |
 |---|---|
 | Docker Desktop (running) | All infrastructure runs in containers |
-| Java 21 + Maven | To compile and run the Spring Boot app |
+| Java 25 + Maven | To compile and run the Spring Boot app |
 | Postman (or curl) | To call the seed API |
 
 All commands below are run from **`inventory-service/`** unless stated otherwise.
