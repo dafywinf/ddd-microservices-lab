@@ -18,7 +18,7 @@
 
     <testcontainers.version>1.20.4</testcontainers.version>
     <allure.version>2.27.0</allure.version>
-    <aspectj.version>1.9.22</aspectj.version>
+    <aspectj.version>1.9.27</aspectj.version>
   </properties>
 
   <dependencyManagement>
