@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,11 +84,22 @@ class ApiDocumentationTest {
     @Description("Verifies that every endpoint of the Inventory controller appears in the OpenAPI document.")
     void restEndpointsAreDocumented() {
         var paths = fetchApiDocs().path("paths");
-        for (var path : new String[] {"/inventory/seed"}) {
+        for (var path : new String[] {"/inventory", "/inventory/seed"}) {
             assertThat(paths.has(path))
                     .as("Expected path '%s' in /v3/api-docs", path)
                     .isTrue();
         }
+    }
+
+    @Test
+    @Story("Stock Listing Documented")
+    @Description("Verifies that GET /inventory is documented with its page and size query parameters.")
+    void stockListingIsDocumented() {
+        var listStock = fetchApiDocs().path("paths").path("/inventory").path("get");
+        assertThat(listStock.isMissingNode()).as("Expected GET /inventory in /v3/api-docs").isFalse();
+        var parameters = new ArrayList<String>();
+        listStock.path("parameters").forEach(p -> parameters.add(p.path("name").asString()));
+        assertThat(parameters).contains("page", "size");
     }
 
     @Test
