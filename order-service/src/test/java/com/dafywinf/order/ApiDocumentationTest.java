@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -88,6 +89,17 @@ class ApiDocumentationTest {
                     .as("Expected path '%s' in /v3/api-docs", path)
                     .isTrue();
         }
+    }
+
+    @Test
+    @Story("Order Listing Documented")
+    @Description("Verifies that GET /orders is documented with its page and size query parameters.")
+    void orderListingIsDocumented() {
+        var listOrders = fetchApiDocs().path("paths").path("/orders").path("get");
+        assertThat(listOrders.isMissingNode()).as("Expected GET /orders in /v3/api-docs").isFalse();
+        var parameters = new ArrayList<String>();
+        listOrders.path("parameters").forEach(p -> parameters.add(p.path("name").asString()));
+        assertThat(parameters).contains("page", "size");
     }
 
     @Test

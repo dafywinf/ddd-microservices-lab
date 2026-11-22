@@ -5,6 +5,7 @@ import com.dafywinf.order.domain.OrderStatus;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,6 +18,8 @@ public class Order {
 
     private OrderStatus status;
 
+    private Instant createdAt;
+
     private List<OrderLine> lines = new ArrayList<>();
 
     protected Order() {}
@@ -25,6 +28,7 @@ public class Order {
         Order o = new Order();
         o.id = UUID.randomUUID().toString();
         o.status = OrderStatus.DRAFT;
+        o.createdAt = Instant.now();
         return o;
     }
 
@@ -52,5 +56,6 @@ public class Order {
 
     public String getId() { return id; }
     public OrderStatus getStatus() { return status; }
+    public Instant getCreatedAt() { return createdAt; }
     public List<OrderLine> getLines() { return List.copyOf(lines); }
 }
