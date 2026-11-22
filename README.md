@@ -131,6 +131,17 @@ curl -X POST http://localhost:8081/orders/$ORDER_ID/place
 
 ------------------------------------------------------------------------
 
+## Release and delivery
+
+Every merge to `main` whose PR title starts `feat:` or `fix:` releases the services it changed: a version per
+service (`order-service-v1.4.1`), a GitHub Release, and an image `ghcr.io/dafywinf/<service>:<version>`. Renovate
+then moves the SIT environment on the homelab cluster to it, through
+[ddd-microservices-lab-deploy](https://github.com/dafywinf-homelab-platform/ddd-microservices-lab-deploy).
+
+How it all works, with diagrams: [docs/release-and-delivery.md](docs/release-and-delivery.md).
+
+------------------------------------------------------------------------
+
 ## Testing & Reporting
 
 The project includes BDD-style testing with Allure reporting.
