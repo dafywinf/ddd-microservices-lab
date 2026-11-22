@@ -78,3 +78,6 @@ application-local.yml
 
 # Allure CLI binaries
 **/.allure/
+
+### Release tooling (package.json) ###
+node_modules/
