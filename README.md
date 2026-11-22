@@ -131,6 +131,20 @@ curl -X POST http://localhost:8081/orders/$ORDER_ID/place
 
 ------------------------------------------------------------------------
 
+## API documentation
+
+Each service serves Swagger UI and its OpenAPI document (springdoc-openapi):
+
+| Service | Swagger UI | OpenAPI JSON |
+|---|---|---|
+| order-service | http://localhost:8081/swagger-ui.html | http://localhost:8081/v3/api-docs |
+| inventory-service | http://localhost:8082/swagger-ui.html | http://localhost:8082/v3/api-docs |
+
+In SIT: https://order-service-sit.192-168-86-10.sslip.io/swagger-ui.html and
+https://inventory-service-sit.192-168-86-10.sslip.io/swagger-ui.html. The version in the page title is the release.
+
+------------------------------------------------------------------------
+
 ## Release and delivery
 
 Every merge to `main` whose PR title starts `feat:` or `fix:` releases the services it changed: a version per
