@@ -137,6 +137,12 @@ Newest first, one page at a time (`page` from 0, `size` 1-100, default 20):
 curl "http://localhost:8081/orders?page=0&size=10"
 ```
 
+Stock works the same way, sorted by SKU, with the available and reserved quantities:
+
+``` bash
+curl "http://localhost:8082/inventory?page=0&size=10"
+```
+
 ------------------------------------------------------------------------
 
 ## API documentation
