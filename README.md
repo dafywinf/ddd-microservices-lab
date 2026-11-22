@@ -129,6 +129,14 @@ curl -X POST http://localhost:8081/orders/$ORDER_ID/lines   -H "Content-Type: ap
 curl -X POST http://localhost:8081/orders/$ORDER_ID/place
 ```
 
+### 6. List orders
+
+Newest first, one page at a time (`page` from 0, `size` 1-100, default 20):
+
+``` bash
+curl "http://localhost:8081/orders?page=0&size=10"
+```
+
 ------------------------------------------------------------------------
 
 ## API documentation
