@@ -6,11 +6,17 @@ on:
     paths:
       - 'order-service/**'       # <--- ONLY trigger on changes here
       - '.github/workflows/order-service-ci.yml'
+      - 'release.config.mjs'
+      - 'release/**'
+      - 'package*.json'
   pull_request:
     branches: [ "main", "master" ]
     paths:
       - 'order-service/**'
       - '.github/workflows/order-service-ci.yml'
+      - 'release.config.mjs'
+      - 'release/**'
+      - 'package*.json'
 
 # concurrency:
 #   group: "gh-pages-deploy"
@@ -65,3 +71,31 @@ jobs:
     #     publish_dir: allure-history
     #     keep_files: true                     # <--- Prevents deleting the inventory report
     #     destination_dir: order-service       # <--- Puts the report in its own folder
+
+  # On main only, after the tests pass: semantic-release reads the Conventional Commits that touched order-service/
+  # since its last tag and, if any is a feat or fix, tags order-service-vX.Y.Z and creates a GitHub Release
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # One release at a time per service, so two quick merges can't both claim the same version
+    concurrency: release-order-service
+    permissions:
+      contents: write   # push the tag, create the GitHub Release
+      issues: write     # open an issue if a release fails
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # all commits and tags: the next version is worked out from history
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '26'
+          cache: npm
+      - run: npm ci
+      - id: release
+        run: npx semantic-release
+        env:
+          SERVICE: order-service
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
