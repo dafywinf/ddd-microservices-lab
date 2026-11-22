@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/London",
+  "labels": ["dependencies"],
+  "docker-compose": {
+    "managerFilePatterns": [
+      "/(^|/)platform/[^/]+\\.ya?ml$/",
+      "/(^|/)docker/app\\.ya?ml$/"
+    ]
+  },
+  "customManagers": [
+    {
+      "description": "Agent images in Jenkinsfiles, e.g. image 'maven:3.9.6-eclipse-temurin-21'",
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)Jenkinsfile$/"],
+      "matchStrings": ["image\\s+['\"](?<depName>[^:'\"]+):(?<currentValue>[^'\"]+)['\"]"],
+      "datasourceTemplate": "docker"
+    }
+  ]
+}
