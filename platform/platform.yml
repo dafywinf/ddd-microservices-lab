@@ -80,7 +80,7 @@ services:
 
   # MongoDB Exporter sidecar to convert internal metrics to format Prometheus understands
   mongodb-exporter:
-    image: percona/mongodb_exporter:0.54
+    image: percona/mongodb_exporter:0.55
     container_name: mongodb-exporter
     environment:
       # Connects to your inventory mongo instance
@@ -163,7 +163,7 @@ services:
     networks: [lab-net]
 
   grafana:
-    image: grafana/grafana:13.3.1
+    image: grafana/grafana:13.3.2
     container_name: grafana
     ports:
       - "3000:3000"
